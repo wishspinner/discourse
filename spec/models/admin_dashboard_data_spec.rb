@@ -192,6 +192,52 @@ describe AdminDashboardData do
     end
   end
 
+  describe 'pwa_config_check' do
+    subject { described_class.new.pwa_config_check }
+
+    it 'alerts for large_icon missing' do
+      SiteSetting.large_icon = nil
+      expect(subject).to_not be_nil
+    end
+
+    it 'alerts for incompatible large_icon' do
+      upload = UploadCreator.new(
+        file_from_fixtures('large_icon_incorrect.png'),
+        'large_icon',
+        for_site_setting: true
+      ).create_for(Discourse.system_user.id)
+      SiteSetting.large_icon = upload
+      expect(subject).to_not be_nil
+    end
+
+    context 'when large_icon is correct' do
+      before do
+        upload = UploadCreator.new(
+          file_from_fixtures('large_icon_correct.png'),
+          'large_icon',
+          for_site_setting: true
+        ).create_for(Discourse.system_user.id)
+        SiteSetting.large_icon = upload
+      end
+
+      it 'alerts for short_title missing' do
+        SiteSetting.short_title = nil
+        expect(subject).to_not be_nil
+      end
+
+      it 'returns nil when everything is ok' do
+        upload = UploadCreator.new(
+          file_from_fixtures('large_icon_correct.png'),
+          'large_icon',
+          for_site_setting: true
+        ).create_for(Discourse.system_user.id)
+        SiteSetting.large_icon = upload
+        SiteSetting.short_title = 'title'
+        expect(subject).to be_nil
+      end
+    end
+  end
+
   describe 's3_config_check' do
     shared_examples 'problem detection for s3-dependent setting' do
       subject { described_class.new.s3_config_check }
